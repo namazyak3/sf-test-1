@@ -1,12 +1,3 @@
-"""
-An example that shows how to use SampleFactory with a Gym env.
-
-Example command line for CartPole-v1:
-python -m sf_examples.train_gym_env --algo=APPO --use_rnn=False --num_envs_per_worker=20 --policy_workers_per_policy=2 --recurrence=1 --with_vtrace=False --batch_size=512 --reward_scale=0.1 --save_every_sec=10 --experiment_summaries_interval=10 --experiment=example_gym_cartpole-v1 --env=CartPole-v1
-python -m sf_examples.enjoy_gym_env --algo=APPO --experiment=example_gym_cartpole-v1 --env=CartPole-v1
-
-"""
-
 import sys
 from typing import Optional
 
@@ -16,13 +7,17 @@ from sample_factory.cfg.arguments import parse_full_cfg, parse_sf_args
 from sample_factory.envs.env_utils import register_env
 from sample_factory.train import run_rl
 
+from mlagents_envs.environment import UnityEnvironment
+from mlagents_envs.envs.unity_gym_env import UnityToGymWrapper
 
 def make_gym_env_func(full_env_name, cfg=None, env_config=None, render_mode: Optional[str] = None):
-    return gym.make(full_env_name, render_mode=render_mode)
-
+    file_name = cfg.env_args[0] if cfg.env_args else None
+    worker_id = env_config.worker_index if env_config else 0
+    unity_env = UnityEnvironment(file_name=full_env_name, base_port=5005, worker_id=worker_id)
+    return UnityToGymWrapper(unity_env=unity_env, uint8_visual=False)
 
 def register_custom_components():
-    register_env("CartPole-v1", make_gym_env_func)
+    register_env("JetRacerTasks", make_gym_env_func)
 
 
 def parse_custom_args(argv=None, evaluation=False):
@@ -32,7 +27,6 @@ def parse_custom_args(argv=None, evaluation=False):
 
 
 def main():
-    """Script entry point."""
     register_custom_components()
     cfg = parse_custom_args()
     status = run_rl(cfg)
